@@ -1,0 +1,117 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "hub": {
+           "type": "object",
+           "defaultValue": {
+               "resourceGroup": "armLab7.1",
+               "vnet": {"name": "hubnet", "addressPrefixes": ["10.10.0.0/16"]},
+               "subnets": [
+                   {"name": "GatewaySubnet", "addressPrefix": "10.10.0.0/24"},
+                   {"name": "frontEnd", "addressPrefix": "10.10.1.0/24"},
+                   {"name": "backEnd", "addressPrefix": "10.10.2.0/24"}
+               ],
+               "createGateway": false,
+               "gatewaySku": "Basic"
+           }
+        },
+        "spokes": {
+           "type": "array",
+           "defaultValue": [
+               {
+                   "resourceGroup": "armLab7.2",
+                   "vnet": {"name": "spoke1net", "addressPrefixes": ["10.20.0.0/16"]},
+                   "subnets": [
+                       {"name": "frontEnd", "addressPrefix": "10.20.0.0/24"},
+                       {"name": "backEnd", "addressPrefix": "10.20.1.0/24"}
+                   ]
+               },
+               {
+                    "resourceGroup": "armLab7.3",
+                    "vnet": {"name": "spoke2net", "addressPrefixes": ["10.30.0.0/16"]},
+                    "subnets": [
+                       {"name": "frontEnd", "addressPrefix": "10.30.0.0/24"},
+                       {"name": "backEnd", "addressPrefix": "10.30.1.0/24"}
+                    ]
+                }
+           ]
+        }
+    },
+    "variables": {
+        "hubUrl": "YOUR_GIT_HUB_URL",
+        "spokeUrl": "YOUR_GIT_HUB_URL",
+        "hubDeploymentName": "[concat('deployHub-', parameters('hub').vnet.name)]"
+    },
+    "resources": [
+        {
+            "name": "[variables('hubDeploymentName')]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2019-05-01",
+            "resourceGroup": "[parameters('hub').resourceGroup]",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('hubUrl')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "vnetName": {
+                        "value": "[parameters('hub').vnet.name]"
+                    },
+                    "vnetAddressPrefixes": {
+                        "value": "[parameters('hub').vnet.addressPrefixes]"
+                    },
+                    "subnets": {
+                        "value": "[parameters('hub').subnets]"
+                    },
+                    "createGateway": {
+                        "value": "[parameters('hub').createGateway]"
+                    },
+                    "gatewaySku": {
+                        "value": "[parameters('hub').gatewaySku]"
+                    }
+                }
+            }
+        },
+        {
+            "name": "[concat('deploySpoke', copyIndex(1), '-', parameters('spokes')[copyIndex()].vnet.name)]",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2019-05-01",
+            "resourceGroup": "[parameters('spokes')[copyIndex()].resourceGroup]",
+            "dependsOn": [
+                "[concat('Microsoft.Resources/deployments/', variables('hubDeploymentName'))]"
+            ],
+            "copy": {
+                "name": "spokecopy",
+                "count": "[length(parameters('spokes'))]",
+                "mode": "Serial",
+                "batchSize": 1
+            },
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "[variables('spokeUrl')]",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "peer": {
+                        "value": true
+                    },
+                    "hub": {
+                        "value": "[parameters('hub')]"
+                    },
+                    "spoke": {
+                        "value": "[parameters('spokes')[copyIndex()]]"
+                    }
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "vpnGatewayPipId": {
+           "type": "string",
+           "value": "[reference(variables('hubDeploymentName')).outputs.gatewayPipId.value]"
+        }
+    }
+}

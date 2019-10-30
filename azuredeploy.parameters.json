@@ -1,0 +1,47 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "hub": {
+            "value": {
+                "resourceGroup": "armLab7.1",
+                "vnet": {"name": "hubnet", "addressPrefixes": ["10.10.0.0/16"]},
+                "subnets": [
+                    {"name": "GatewaySubnet", "addressPrefix": "10.10.0.0/24"},
+                    {"name": "frontEnd", "addressPrefix": "10.10.1.0/24"},
+                    {"name": "backEnd", "addressPrefix": "10.10.2.0/24"}
+                ],
+                "createGateway": false,
+                "gatewaySku": "Basic"
+            }
+        },
+        "spokes": {
+            "value": [
+                {
+                    "resourceGroup": "armLab7.2",
+                    "vnet": {"name": "spoke1net", "addressPrefixes": ["10.20.0.0/16"]},
+                    "subnets": [
+                        {"name": "frontEnd", "addressPrefix": "10.20.0.0/24"},
+                        {"name": "backEnd", "addressPrefix": "10.20.1.0/24"}
+                    ]
+                },
+                {
+                     "resourceGroup": "armLab7.3",
+                     "vnet": {"name": "spoke2net", "addressPrefixes": ["10.30.0.0/16"]},
+                     "subnets": [
+                        {"name": "frontEnd", "addressPrefix": "10.30.0.0/24"},
+                        {"name": "backEnd", "addressPrefix": "10.30.1.0/24"}
+                     ]
+                },
+                {
+                    "resourceGroup": "armLab7.4",
+                    "vnet": {"name": "spoke3net", "addressPrefixes": ["10.40.0.0/16"]},
+                    "subnets": [
+                       {"name": "frontEnd", "addressPrefix": "10.40.0.0/24"},
+                       {"name": "backEnd", "addressPrefix": "10.40.1.0/24"}
+                    ]
+                }
+            ]
+        }
+    }
+}
